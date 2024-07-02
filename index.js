@@ -391,124 +391,124 @@ app.patch('/products/:id', upload.array('images', 5), async (req, res) => {
 //   }
 // });
 //fetch orders by id
-app.get('/orders/:id', async (req, res) => {
-  try {
-    const orderId = req.params.id;
-    const collection = client.db("better_ecom").collection('orders');
-    const order = await collection.findOne({ order_id: orderId });
+// app.get('/orders/:id', async (req, res) => {
+//   try {
+//     const orderId = req.params.id;
+//     const collection = client.db("better_ecom").collection('orders');
+//     const order = await collection.findOne({ order_id: orderId });
 
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
-    }
+//     if (!order) {
+//       return res.status(404).json({ message: "Order not found" });
+//     }
 
-    res.status(200).json(order);
-  } catch (err) {
-    console.error("Error getting order:", err);
-    res.status(500).json({ message: "Failed to retrieve order" });
-  }
-});
+//     res.status(200).json(order);
+//   } catch (err) {
+//     console.error("Error getting order:", err);
+//     res.status(500).json({ message: "Failed to retrieve order" });
+//   }
+// });
 
 // Update Order Status
-app.put('/orders/:id', async (req, res) => {
-  const orderId = req.params.id;
-  const { newStatus } = req.body;
+// app.put('/orders/:id', async (req, res) => {
+//   const orderId = req.params.id;
+//   const { newStatus } = req.body;
 
-  try {
-    const collection = client.db("better_ecom").collection('orders');
-    const currentTime = new Date();
+//   try {
+//     const collection = client.db("better_ecom").collection('orders');
+//     const currentTime = new Date();
   
-    currentTime.setUTCHours(currentTime.getUTCHours() + 6);
+//     currentTime.setUTCHours(currentTime.getUTCHours() + 6);
 
-    const result = await collection.updateOne(
-      { _id: new ObjectId(orderId) },
-      { $set: { status: newStatus, updated_time: currentTime } }
-    );
+//     const result = await collection.updateOne(
+//       { _id: new ObjectId(orderId) },
+//       { $set: { status: newStatus, updated_time: currentTime } }
+//     );
 
-    if (result.modifiedCount === 1) {
-      const updatedOrder = await collection.findOne({ _id: new ObjectId(orderId) });
-      res.status(200).json({ message: "Order status updated successfully", order: updatedOrder });
-    } else {
-      res.status(404).json({ message: "Order not found" });
-    }
-  } catch (err) {
-    console.error("Error updating order status:", err);
-    res.status(500).json({ message: "Failed to update order status", error: err.message });
-  }
-});
+//     if (result.modifiedCount === 1) {
+//       const updatedOrder = await collection.findOne({ _id: new ObjectId(orderId) });
+//       res.status(200).json({ message: "Order status updated successfully", order: updatedOrder });
+//     } else {
+//       res.status(404).json({ message: "Order not found" });
+//     }
+//   } catch (err) {
+//     console.error("Error updating order status:", err);
+//     res.status(500).json({ message: "Failed to update order status", error: err.message });
+//   }
+// });
 
 
 
 
 
 //user
-app.post('/addusers', upload.none(), async (req, res) => {
-  const { name, email, phone } = req.body;
+// app.post('/addusers', upload.none(), async (req, res) => {
+//   const { name, email, phone } = req.body;
 
-  const user = {
-    name,
-    email,
-    phone,
-    createdAt: new Date(),
-  };
+//   const user = {
+//     name,
+//     email,
+//     phone,
+//     createdAt: new Date(),
+//   };
 
-  try {
-    const collection = client.db("better_ecom").collection('users');
-    const result = await collection.insertOne(user);
-    res.status(201).json({ message: 'User added successfully', userId: result.insertedId });
-  } catch (error) {
-    console.error('Error adding user:', error);
-    res.status(500).json({ message: 'Failed to add user', error: error.message });
-  }
-});
-// get users
-app.get('/users', async (req, res) => {
-  try {
-    const collection = client.db("better_ecom").collection('users');
-    const orders = await collection.find({}).toArray();
-    res.status(200).json(orders);
-  } catch (err) {
-    console.error("Error getting orders:", err);
-    res.status(500).json({ message: "Failed to retrieve orders" });
-  }
-});
-app.get('/users/email/:email', async (req, res) => {
-  try {
-    const email = req.params.email;
+//   try {
+//     const collection = client.db("better_ecom").collection('users');
+//     const result = await collection.insertOne(user);
+//     res.status(201).json({ message: 'User added successfully', userId: result.insertedId });
+//   } catch (error) {
+//     console.error('Error adding user:', error);
+//     res.status(500).json({ message: 'Failed to add user', error: error.message });
+//   }
+// });
+// // get users
+// app.get('/users', async (req, res) => {
+//   try {
+//     const collection = client.db("better_ecom").collection('users');
+//     const orders = await collection.find({}).toArray();
+//     res.status(200).json(orders);
+//   } catch (err) {
+//     console.error("Error getting orders:", err);
+//     res.status(500).json({ message: "Failed to retrieve orders" });
+//   }
+// });
+// app.get('/users/email/:email', async (req, res) => {
+//   try {
+//     const email = req.params.email;
 
-    const collection = client.db("better_ecom").collection('users');
-    const user = await collection.findOne({ email });
+//     const collection = client.db("better_ecom").collection('users');
+//     const user = await collection.findOne({ email });
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+//     if (!user) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
 
-    res.status(200).json(user);
-  } catch (err) {
-    console.error("Error fetching user by email:", err);
-    res.status(500).json({ message: "Failed to fetch user" });
-  }
-});
+//     res.status(200).json(user);
+//   } catch (err) {
+//     console.error("Error fetching user by email:", err);
+//     res.status(500).json({ message: "Failed to fetch user" });
+//   }
+// });
 
-app.put('/users/:id', async (req, res) => {
-  try {
-    const userId = req.params.id;
-    const { orderId } = req.body;
+// app.put('/users/:id', async (req, res) => {
+//   try {
+//     const userId = req.params.id;
+//     const { orderId } = req.body;
 
-    const collection = client.db("better_ecom").collection('users');
-    const result = await collection.updateOne(
-      { _id: new ObjectId(userId) },
-      { $push: { trackrecord: orderId } }
-    );
+//     const collection = client.db("better_ecom").collection('users');
+//     const result = await collection.updateOne(
+//       { _id: new ObjectId(userId) },
+//       { $push: { trackrecord: orderId } }
+//     );
 
-    if (result.matchedCount === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
+//     if (result.matchedCount === 0) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
 
-    res.status(200).json({ message: "Track record updated successfully" });
-  } catch (err) {
-    console.error("Error updating track record:", err);
-    res.status(500).json({ message: "Failed to update track record" });
-  }
-});
+//     res.status(200).json({ message: "Track record updated successfully" });
+//   } catch (err) {
+//     console.error("Error updating track record:", err);
+//     res.status(500).json({ message: "Failed to update track record" });
+//   }
+// });
 
 app.listen(port, () => console.log(`Server is running on port ${port}`));
