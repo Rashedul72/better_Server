@@ -379,17 +379,17 @@ app.patch('/products/:id', upload.array('images', 5), async (req, res) => {
 // });
 
 
-// Order Routes
-app.get('/orders', async (req, res) => {
-  try {
-    const collection = client.db("better_ecom").collection('orders');
-    const orders = await collection.find({}).toArray();
-    res.status(200).json(orders);
-  } catch (err) {
-    console.error("Error getting orders:", err);
-    res.status(500).json({ message: "Failed to retrieve orders" });
-  }
-});
+// // Order Routes
+// app.get('/orders', async (req, res) => {
+//   try {
+//     const collection = client.db("better_ecom").collection('orders');
+//     const orders = await collection.find({}).toArray();
+//     res.status(200).json(orders);
+//   } catch (err) {
+//     console.error("Error getting orders:", err);
+//     res.status(500).json({ message: "Failed to retrieve orders" });
+//   }
+// });
 //fetch orders by id
 app.get('/orders/:id', async (req, res) => {
   try {
