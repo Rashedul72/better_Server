@@ -1,5 +1,5 @@
 const express = require('express');
-
+const bodyParser = require('body-parser');
 const cors = require('cors');
 const multer = require('multer');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -9,7 +9,7 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 app.use(cors());
-
+app.use(bodyParser.json());
 
 const client = new MongoClient(
   `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ujcbv.mongodb.net`,
@@ -70,8 +70,8 @@ app.get('/categories', async (req, res) => {
   }
 });
 // Route to update a category by ID
-app.patch('/categories/:id', upload.single('image'), async (req, res) => {
-  const categoryId = req.params.id; 
+app.put('/categories/:id', upload.single('image'), async (req, res) => {
+  const categoryId = req.params.id; // Assuming 'id' is the correct parameter name
   const { name } = req.body;
 
   try {
@@ -102,6 +102,7 @@ app.patch('/categories/:id', upload.single('image'), async (req, res) => {
     res.status(500).json({ message: 'Failed to update category', error: error.message });
   }
 });
+
 // Route to delete a category by ID
 app.delete('/categories/:id', async (req, res) => {
   const categoryId = req.params.id;
@@ -118,24 +119,6 @@ app.delete('/categories/:id', async (req, res) => {
     res.status(500).json({ message: "Failed to delete category", error: err.message });
   }
 });
-// Add a new subcategory and associate it with a category
-app.post('/subcategories', async (req, res) => {
-  const { name, category } = req.body;
-  try {
-    const collection = client.db("better_ecom").collection('subcategories');
-    const newSubcategory = { name, category, created_time: new Date() };
-    const result = await collection.insertOne(newSubcategory);
-    if (result.acknowledged) {
-      res.status(201).json({ message: "Subcategory added successfully", subcategory: newSubcategory });
-    } else {
-      throw new Error("Failed to insert subcategory");
-    }
-  } catch (err) {
-    console.error("Error adding subcategory:", err);
-    res.status(500).json({ message: "Failed to add subcategory", error: err.message });
-  }
-});
-
 
 // Get all subcategories
 app.get('/subcategories', async (req, res) => {
@@ -205,7 +188,7 @@ app.delete('/subcategories/:id', async (req, res) => {
 
 
 app.post('/addproducts', upload.array('images', 5), async (req, res) => {
-  const { name, price, wholesalePrice, wholesaleQuantity, category, sku, barcode, stock, costPerUnit, storePrice, shortDescription, description, expirationDate, quantityType } = req.body;
+  const { name, price, category, sku, barcode, stock, costPerUnit, storePrice, shortDescription, description, expirationDate, quantityType } = req.body;
 
   if (!req.files || req.files.length === 0) {
     return res.status(400).json({ message: 'No image files uploaded' });
@@ -220,8 +203,6 @@ app.post('/addproducts', upload.array('images', 5), async (req, res) => {
   const product = {
     name,
     price,
-    wholesalePrice, 
-    wholesaleQuantity,
     category,
     sku,
     barcode,
@@ -244,7 +225,6 @@ app.post('/addproducts', upload.array('images', 5), async (req, res) => {
     res.status(500).json({ message: 'Failed to add product' });
   }
 });
-
 //search by name
 app.get('/products', async (req, res) => {
   try {
@@ -262,16 +242,16 @@ app.get('/products', async (req, res) => {
   }
 });
 
-// get products by subcategory
-app.get('/products/subcategory/:subcategory', async (req, res) => {
-  let { subcategory } = req.params;
-  subcategory = decodeURIComponent(subcategory); // Decode the URL encoded subcategory
+// get products by category
+app.get('/products/category/:category', async (req, res) => {
+  let { category } = req.params;
+  category = decodeURIComponent(category); // Decode the URL encoded category
   try {
     const collection = await getDbCollection(); // Replace with your database collection retrieval
-    const products = await collection.find({ category: { $regex: new RegExp(subcategory, 'i') } }).toArray();
+    const products = await collection.find({ category: { $regex: new RegExp(category, 'i') } }).toArray();
     res.json(products);
   } catch (error) {
-    console.error('Error fetching products by subcategory:', error);
+    console.error('Error fetching products by category:', error);
     res.status(500).json({ message: 'Failed to fetch products' });
   }
 });
@@ -321,7 +301,7 @@ app.delete('/products/:id', async (req, res) => {
   }
 });
 
-app.patch('/products/:id', upload.array('images', 5), async (req, res) => {
+app.put('/products/:id', upload.array('images', 5), async (req, res) => {
   const { id } = req.params;
   const { name, price, category, sku, barcode, stock, costPerUnit, storePrice, shortDescription, description, expirationDate, quantityType } = req.body;
 
@@ -332,19 +312,19 @@ app.patch('/products/:id', upload.array('images', 5), async (req, res) => {
   }));
 
   const updatedProduct = {
-    ...(name && { name }),
-    ...(price && { price }),
-    ...(category && { category }),
-    ...(sku && { sku }),
-    ...(barcode && { barcode }),
-    ...(stock && { stock }),
-    ...(costPerUnit && { costPerUnit }),
-    ...(storePrice && { storePrice }),
-    ...(shortDescription && { shortDescription }),
-    ...(description && { description }),
-    ...(expirationDate && { expirationDate }),
-    ...(quantityType && { quantityType }),
-    ...(images.length && { images }),
+    name,
+    price,
+    category,
+    sku,
+    barcode,
+    stock,
+    costPerUnit,
+    storePrice,
+    shortDescription,
+    description,
+    expirationDate,
+    quantityType,
+    images,
     updated_time: new Date()
   };
 
@@ -358,6 +338,8 @@ app.patch('/products/:id', upload.array('images', 5), async (req, res) => {
     res.status(500).json({ message: 'Failed to update product' });
   }
 });
+
+
 
 
 
@@ -390,25 +372,8 @@ app.patch('/products/:id', upload.array('images', 5), async (req, res) => {
 //     res.status(500).json({ message: "Failed to retrieve orders" });
 //   }
 // });
-//fetch orders by id
-// app.get('/orders/:id', async (req, res) => {
-//   try {
-//     const orderId = req.params.id;
-//     const collection = client.db("better_ecom").collection('orders');
-//     const order = await collection.findOne({ order_id: orderId });
 
-//     if (!order) {
-//       return res.status(404).json({ message: "Order not found" });
-//     }
-
-//     res.status(200).json(order);
-//   } catch (err) {
-//     console.error("Error getting order:", err);
-//     res.status(500).json({ message: "Failed to retrieve order" });
-//   }
-// });
-
-// Update Order Status
+// // Update Order Status
 // app.put('/orders/:id', async (req, res) => {
 //   const orderId = req.params.id;
 //   const { newStatus } = req.body;
@@ -437,78 +402,28 @@ app.patch('/products/:id', upload.array('images', 5), async (req, res) => {
 // });
 
 
-
-
-
-//user
-// app.post('/addusers', upload.none(), async (req, res) => {
-//   const { name, email, phone } = req.body;
-
-//   const user = {
-//     name,
-//     email,
-//     phone,
-//     createdAt: new Date(),
-//   };
-
+// // PUT method to update the stock of a product
+// app.put('/updateproducts/:id', async (req, res) => {
 //   try {
-//     const collection = client.db("better_ecom").collection('users');
-//     const result = await collection.insertOne(user);
-//     res.status(201).json({ message: 'User added successfully', userId: result.insertedId });
-//   } catch (error) {
-//     console.error('Error adding user:', error);
-//     res.status(500).json({ message: 'Failed to add user', error: error.message });
-//   }
-// });
-// // get users
-// app.get('/users', async (req, res) => {
-//   try {
-//     const collection = client.db("better_ecom").collection('users');
-//     const orders = await collection.find({}).toArray();
-//     res.status(200).json(orders);
-//   } catch (err) {
-//     console.error("Error getting orders:", err);
-//     res.status(500).json({ message: "Failed to retrieve orders" });
-//   }
-// });
-// app.get('/users/email/:email', async (req, res) => {
-//   try {
-//     const email = req.params.email;
+//     const productId = req.params.id;
+//     const updatedStock = req.body.stock;
 
-//     const collection = client.db("better_ecom").collection('users');
-//     const user = await collection.findOne({ email });
-
-//     if (!user) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
-
-//     res.status(200).json(user);
-//   } catch (err) {
-//     console.error("Error fetching user by email:", err);
-//     res.status(500).json({ message: "Failed to fetch user" });
-//   }
-// });
-
-// app.put('/users/:id', async (req, res) => {
-//   try {
-//     const userId = req.params.id;
-//     const { orderId } = req.body;
-
-//     const collection = client.db("better_ecom").collection('users');
+//     const collection = client.db("better_ecom").collection('products');
 //     const result = await collection.updateOne(
-//       { _id: new ObjectId(userId) },
-//       { $push: { trackrecord: orderId } }
+//       { _id: new ObjectId(productId) },
+//       { $set: { stock: updatedStock } }
 //     );
 
-//     if (result.matchedCount === 0) {
-//       return res.status(404).json({ message: "User not found" });
+//     if (result.matchedCount === 1) {
+//       res.status(200).json({ message: "Stock updated successfully" });
+//     } else {
+//       res.status(404).json({ message: "Product not found" });
 //     }
-
-//     res.status(200).json({ message: "Track record updated successfully" });
 //   } catch (err) {
-//     console.error("Error updating track record:", err);
-//     res.status(500).json({ message: "Failed to update track record" });
+//     console.error("Error updating stock:", err);
+//     res.status(500).json({ message: "Failed to update stock" });
 //   }
 // });
+
 
 app.listen(port, () => console.log(`Server is running on port ${port}`));
