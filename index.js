@@ -301,7 +301,7 @@ app.delete('/products/:id', async (req, res) => {
   }
 });
 
-app.put('/products/:id', upload.array('images', 5), async (req, res) => {
+app.patch('/products/:id', upload.array('images', 5), async (req, res) => {
   const { id } = req.params;
   const { name, price, category, sku, barcode, stock, costPerUnit, storePrice, shortDescription, description, expirationDate, quantityType } = req.body;
 
@@ -312,19 +312,19 @@ app.put('/products/:id', upload.array('images', 5), async (req, res) => {
   }));
 
   const updatedProduct = {
-    name,
-    price,
-    category,
-    sku,
-    barcode,
-    stock,
-    costPerUnit,
-    storePrice,
-    shortDescription,
-    description,
-    expirationDate,
-    quantityType,
-    images,
+    ...(name && { name }),
+    ...(price && { price }),
+    ...(category && { category }),
+    ...(sku && { sku }),
+    ...(barcode && { barcode }),
+    ...(stock && { stock }),
+    ...(costPerUnit && { costPerUnit }),
+    ...(storePrice && { storePrice }),
+    ...(shortDescription && { shortDescription }),
+    ...(description && { description }),
+    ...(expirationDate && { expirationDate }),
+    ...(quantityType && { quantityType }),
+    ...(images.length && { images }),
     updated_time: new Date()
   };
 
@@ -343,87 +343,6 @@ app.put('/products/:id', upload.array('images', 5), async (req, res) => {
 
 
 
-// app.post('/addorders', async (req, res) => {
-//   try {
-//     const order = req.body;
-//     const collection = client.db("better_ecom").collection('orders');
-//     const result = await collection.insertOne(order);
-
-//     if (result.acknowledged) {
-//       res.status(201).json({ message: 'Order created successfully', orderId: result.insertedId });
-//     } else {
-//       res.status(500).json({ message: "Failed to create order" });
-//     }
-//   } catch (err) {
-//     console.error("Error creating order:", err);
-//     res.status(500).json({ message: "Failed to create order", error: err.message });
-//   }
-// });
-
-
-// // Order Routes
-// app.get('/orders', async (req, res) => {
-//   try {
-//     const collection = client.db("better_ecom").collection('orders');
-//     const orders = await collection.find({}).toArray();
-//     res.status(200).json(orders);
-//   } catch (err) {
-//     console.error("Error getting orders:", err);
-//     res.status(500).json({ message: "Failed to retrieve orders" });
-//   }
-// });
-
-// // Update Order Status
-// app.put('/orders/:id', async (req, res) => {
-//   const orderId = req.params.id;
-//   const { newStatus } = req.body;
-
-//   try {
-//     const collection = client.db("better_ecom").collection('orders');
-//     const currentTime = new Date();
-  
-//     currentTime.setUTCHours(currentTime.getUTCHours() + 6);
-
-//     const result = await collection.updateOne(
-//       { _id: new ObjectId(orderId) },
-//       { $set: { status: newStatus, updated_time: currentTime } }
-//     );
-
-//     if (result.modifiedCount === 1) {
-//       const updatedOrder = await collection.findOne({ _id: new ObjectId(orderId) });
-//       res.status(200).json({ message: "Order status updated successfully", order: updatedOrder });
-//     } else {
-//       res.status(404).json({ message: "Order not found" });
-//     }
-//   } catch (err) {
-//     console.error("Error updating order status:", err);
-//     res.status(500).json({ message: "Failed to update order status", error: err.message });
-//   }
-// });
-
-
-// // PUT method to update the stock of a product
-// app.put('/updateproducts/:id', async (req, res) => {
-//   try {
-//     const productId = req.params.id;
-//     const updatedStock = req.body.stock;
-
-//     const collection = client.db("better_ecom").collection('products');
-//     const result = await collection.updateOne(
-//       { _id: new ObjectId(productId) },
-//       { $set: { stock: updatedStock } }
-//     );
-
-//     if (result.matchedCount === 1) {
-//       res.status(200).json({ message: "Stock updated successfully" });
-//     } else {
-//       res.status(404).json({ message: "Product not found" });
-//     }
-//   } catch (err) {
-//     console.error("Error updating stock:", err);
-//     res.status(500).json({ message: "Failed to update stock" });
-//   }
-// });
 
 
 app.listen(port, () => console.log(`Server is running on port ${port}`));
