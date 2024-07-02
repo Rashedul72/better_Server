@@ -361,22 +361,22 @@ app.patch('/products/:id', upload.array('images', 5), async (req, res) => {
 
 
 
-app.post('/addorders', async (req, res) => {
-  try {
-    const order = req.body;
-    const collection = client.db("better_ecom").collection('orders');
-    const result = await collection.insertOne(order);
+// app.post('/addorders', async (req, res) => {
+//   try {
+//     const order = req.body;
+//     const collection = client.db("better_ecom").collection('orders');
+//     const result = await collection.insertOne(order);
 
-    if (result.acknowledged) {
-      res.status(201).json({ message: 'Order created successfully', orderId: result.insertedId });
-    } else {
-      res.status(500).json({ message: "Failed to create order" });
-    }
-  } catch (err) {
-    console.error("Error creating order:", err);
-    res.status(500).json({ message: "Failed to create order", error: err.message });
-  }
-});
+//     if (result.acknowledged) {
+//       res.status(201).json({ message: 'Order created successfully', orderId: result.insertedId });
+//     } else {
+//       res.status(500).json({ message: "Failed to create order" });
+//     }
+//   } catch (err) {
+//     console.error("Error creating order:", err);
+//     res.status(500).json({ message: "Failed to create order", error: err.message });
+//   }
+// });
 
 
 // Order Routes
