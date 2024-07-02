@@ -437,28 +437,7 @@ app.put('/orders/:id', async (req, res) => {
 });
 
 
-// PUT method to update the stock of a product
-app.put('/updateproducts/:id', async (req, res) => {
-  try {
-    const productId = req.params.id;
-    const updatedStock = req.body.stock;
 
-    const collection = client.db("better_ecom").collection('products');
-    const result = await collection.updateOne(
-      { _id: new ObjectId(productId) },
-      { $set: { stock: updatedStock } }
-    );
-
-    if (result.matchedCount === 1) {
-      res.status(200).json({ message: "Stock updated successfully" });
-    } else {
-      res.status(404).json({ message: "Product not found" });
-    }
-  } catch (err) {
-    console.error("Error updating stock:", err);
-    res.status(500).json({ message: "Failed to update stock" });
-  }
-});
 
 
 //user
