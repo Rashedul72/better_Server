@@ -187,22 +187,19 @@ app.delete('/subcategories/:id', async (req, res) => {
 
 
 
-app.post('/addproducts', upload.array('images', 5), async (req, res) => {
-  const { name, price, category, sku, barcode, stock, costPerUnit, storePrice, shortDescription, description, expirationDate, quantityType } = req.body;
 
-  if (!req.files || req.files.length === 0) {
-    return res.status(400).json({ message: 'No image files uploaded' });
+app.post('/addproducts', async (req, res) => {
+  const { name, price, wholesalePrice, wholesaleQuantity, category, sku, barcode, stock, costPerUnit, storePrice, shortDescription, description, expirationDate, quantityType, images } = req.body;
+
+  if (!images || images.length === 0) {
+    return res.status(400).json({ message: 'No image URLs provided' });
   }
-
-  const images = req.files.map(file => ({
-    contentType: file.mimetype,
-    size: file.size,
-    img: file.buffer
-  }));
 
   const product = {
     name,
     price,
+    wholesalePrice,
+    wholesaleQuantity,
     category,
     sku,
     barcode,
@@ -213,7 +210,7 @@ app.post('/addproducts', upload.array('images', 5), async (req, res) => {
     description,
     expirationDate,
     quantityType,
-    images
+    images // URLs of uploaded images
   };
 
   try {
@@ -225,6 +222,7 @@ app.post('/addproducts', upload.array('images', 5), async (req, res) => {
     res.status(500).json({ message: 'Failed to add product' });
   }
 });
+
 //search by name
 app.get('/products', async (req, res) => {
   try {
@@ -255,6 +253,21 @@ app.get('/products/category/:category', async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch products' });
   }
 });
+// Get products by type
+app.get('/products/type/:type', async (req, res) => {
+  let { type } = req.params;
+  type = decodeURIComponent(type); // Decode the URL encoded type
+  try {
+    const collection = await getDbCollection(); // Replace with your database collection retrieval
+    const products = await collection.find({ type: { $regex: new RegExp(type, 'i') } }).toArray();
+    res.json(products);
+  } catch (error) {
+    console.error('Error fetching products by type:', error);
+    res.status(500).json({ message: 'Failed to fetch products' });
+  }
+});
+
+
 
 // Get product by ID
 app.get('/products/:id', async (req, res) => {
@@ -272,6 +285,7 @@ app.get('/products/:id', async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch product', error: error.message });
   }
 });
+
 // Combined search and fetch products route
 app.get('/products', async (req, res) => {
   try {
@@ -301,45 +315,29 @@ app.delete('/products/:id', async (req, res) => {
   }
 });
 
-app.patch('/products/:id', upload.array('images', 5), async (req, res) => {
+
+app.patch('/products/:id', async (req, res) => {
   const { id } = req.params;
-  const { name, price, category, sku, barcode, stock, costPerUnit, storePrice, shortDescription, description, expirationDate, quantityType } = req.body;
-
-  const images = req.files.map(file => ({
-    contentType: file.mimetype,
-    size: file.size,
-    img: file.buffer
-  }));
-
-  const updatedProduct = {
-    ...(name && { name }),
-    ...(price && { price }),
-    ...(category && { category }),
-    ...(sku && { sku }),
-    ...(barcode && { barcode }),
-    ...(stock && { stock }),
-    ...(costPerUnit && { costPerUnit }),
-    ...(storePrice && { storePrice }),
-    ...(shortDescription && { shortDescription }),
-    ...(description && { description }),
-    ...(expirationDate && { expirationDate }),
-    ...(quantityType && { quantityType }),
-    ...(images.length && { images }),
-    updated_time: new Date()
-  };
+  const updatedProduct = req.body;
 
   try {
-    const collection = await getDbCollection();
-    await collection.updateOne({ _id: new ObjectId(id) }, { $set: updatedProduct });
-    const product = await collection.findOne({ _id: new ObjectId(id) });
+    
+    const collection = client.db("better_ecom").collection('products');
+    const result = await collection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updatedProduct }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    const product = await db.collection('products').findOne({ _id: new ObjectId(id) });
     res.json(product);
-  } catch (error) {
-    console.error('Error updating product:', error);
-    res.status(500).json({ message: 'Failed to update product' });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
   }
 });
-
-
 
 
 
