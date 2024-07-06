@@ -8,6 +8,7 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 5000;
 
+
 app.use(cors());
 app.use(bodyParser.json());
 
@@ -32,32 +33,33 @@ app.post('/addcategories', upload.single('image'), async (req, res) => {
     return res.status(400).json({ message: 'No image file uploaded' });
   }
 
-  const image = {
-    contentType: req.file.mimetype,
-    size: req.file.size,
-    img: req.file.buffer
-  };
-
-  const category = {
-    name,
-    image,
-    created_time: new Date()
-  };
-
   try {
-    const collection = await categoryDbCollection ();
+    // Upload image to ImgBB
+    const formData = new FormData();
+    formData.append('image', req.file.buffer.toString('base64'));
+    const response = await fetch('https://api.imgbb.com/1/upload?key=709857af4158efc43859168f6daa2479', {
+      method: 'POST',
+      body: formData
+    });
+    const data = await response.json();
+    const imageUrl = data.data.url;
+
+    // Prepare category data
+    const category = {
+      name,
+      imageUrl,
+      created_time: new Date()
+    };
+
+    // Insert category into MongoDB
+    const collection = await categoryDbCollection();
     const result = await collection.insertOne(category);
-    if (result.acknowledged) {
-      res.status(201).json({ message: 'Category added successfully', categoryId: result.insertedId });
-    } else {
-      throw new Error('Failed to insert category');
-    }
+    res.status(201).json({ message: 'Category added successfully', categoryId: result.insertedId });
   } catch (error) {
     console.error('Error adding category:', error);
-    res.status(500).json({ message: 'Failed to add category', error: error.message });
+    res.status(500).json({ message: 'Failed to add category' });
   }
 });
-
 
 app.get('/categories', async (req, res) => {
   try {
@@ -70,7 +72,7 @@ app.get('/categories', async (req, res) => {
   }
 });
 // Route to update a category by ID
-app.put('/categories/:id', upload.single('image'), async (req, res) => {
+app.patch('/categories/:id', upload.single('image'), async (req, res) => {
   const categoryId = req.params.id; // Assuming 'id' is the correct parameter name
   const { name } = req.body;
 
@@ -102,6 +104,7 @@ app.put('/categories/:id', upload.single('image'), async (req, res) => {
     res.status(500).json({ message: 'Failed to update category', error: error.message });
   }
 });
+
 
 // Route to delete a category by ID
 app.delete('/categories/:id', async (req, res) => {
@@ -188,38 +191,74 @@ app.delete('/subcategories/:id', async (req, res) => {
 
 
 
-app.post('/addproducts', async (req, res) => {
-  const { name, price, wholesalePrice, wholesaleQuantity, category, sku, barcode, stock, costPerUnit, storePrice, shortDescription, description, expirationDate, quantityType, images } = req.body;
+// app.post('/addproducts', async (req, res) => {
+//   const { name, price, wholesalePrice, wholesaleQuantity, category, sku, barcode, stock, costPerUnit, storePrice, shortDescription, description, expirationDate, quantityType, images } = req.body;
 
-  if (!images || images.length === 0) {
-    return res.status(400).json({ message: 'No image URLs provided' });
+//   if (!images || images.length === 0) {
+//     return res.status(400).json({ message: 'No image URLs provided' });
+//   }
+
+//   const product = {
+//     name,
+//     price,
+//     wholesalePrice,
+//     wholesaleQuantity,
+//     category,
+//     sku,
+//     barcode,
+//     stock,
+//     costPerUnit,
+//     storePrice,
+//     shortDescription,
+//     description,
+//     expirationDate,
+//     quantityType,
+//     images // URLs of uploaded images
+//   };
+
+//   try {
+//     const collection = await getDbCollection();
+//     const result = await collection.insertOne(product);
+//     res.status(201).json({ message: 'Product added successfully', productId: result.insertedId });
+//   } catch (error) {
+//     console.error('Error adding product:', error);
+//     res.status(500).json({ message: 'Failed to add product' });
+//   }
+// });
+
+// Route to add categories with images
+app.post('/addcategories', upload.single('image'), async (req, res) => {
+  const { name } = req.body;
+
+  if (!req.file) {
+    return res.status(400).json({ message: 'No image file uploaded' });
   }
 
-  const product = {
-    name,
-    price,
-    wholesalePrice,
-    wholesaleQuantity,
-    category,
-    sku,
-    barcode,
-    stock,
-    costPerUnit,
-    storePrice,
-    shortDescription,
-    description,
-    expirationDate,
-    quantityType,
-    images // URLs of uploaded images
-  };
-
   try {
-    const collection = await getDbCollection();
-    const result = await collection.insertOne(product);
-    res.status(201).json({ message: 'Product added successfully', productId: result.insertedId });
+    // Upload image to ImgBB
+    const formData = new FormData();
+    formData.append('image', req.file.buffer.toString('base64'));
+    const response = await fetch('https://api.imgbb.com/1/upload?key=709857af4158efc43859168f6daa2479', {
+      method: 'POST',
+      body: formData
+    });
+    const data = await response.json();
+    const img = data.data.url;
+
+    // Prepare category data
+    const category = {
+      name,
+      img,
+      created_time: new Date()
+    };
+
+    // Insert category into MongoDB
+    const collection = await categoryDbCollection();
+    const result = await collection.insertOne(category);
+    res.status(201).json({ message: 'Category added successfully', categoryId: result.insertedId });
   } catch (error) {
-    console.error('Error adding product:', error);
-    res.status(500).json({ message: 'Failed to add product' });
+    console.error('Error adding category:', error);
+    res.status(500).json({ message: 'Failed to add category' });
   }
 });
 
@@ -316,12 +355,38 @@ app.delete('/products/:id', async (req, res) => {
 });
 
 
-app.patch('/products/:id', async (req, res) => {
+// app.patch('/products/:id', async (req, res) => {
+//   const { id } = req.params;
+//   const updatedProduct = req.body;
+
+//   try {
+    
+//     const collection = client.db("better_ecom").collection('products');
+//     const result = await collection.updateOne(
+//       { _id: new ObjectId(id) },
+//       { $set: updatedProduct }
+//     );
+
+//     if (result.matchedCount === 0) {
+//       return res.status(404).json({ message: 'Product not found' });
+//     }
+
+//     const product = await db.collection('products').findOne({ _id: new ObjectId(id) });
+//     res.json(product);
+//   } catch (err) {
+//     res.status(400).json({ message: err.message });
+//   }
+// });
+
+app.put('/products/:id', async (req, res) => {
   const { id } = req.params;
   const updatedProduct = req.body;
 
   try {
-    
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid product ID' });
+    }
+
     const collection = client.db("better_ecom").collection('products');
     const result = await collection.updateOne(
       { _id: new ObjectId(id) },
@@ -332,13 +397,13 @@ app.patch('/products/:id', async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    const product = await db.collection('products').findOne({ _id: new ObjectId(id) });
+    const product = await collection.findOne({ _id: new ObjectId(id) });
     res.json(product);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    console.error('Error updating product:', err.message);
+    res.status(500).json({ message: 'Failed to update product', error: err.message });
   }
 });
-
 
 
 
