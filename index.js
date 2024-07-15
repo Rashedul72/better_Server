@@ -5,13 +5,19 @@ const multer = require('multer');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 
-const moment = require('moment-timezone');
 const app = express();
-const port = process.env.PORT || 500;
+const port = process.env.PORT || 5000;
 const axios = require('axios');
+const moment = require('moment-timezone');
+
+
+
+
 
 app.use(cors());
 app.use(bodyParser.json());
+
+
 
 
 const client = new MongoClient(
@@ -20,12 +26,13 @@ const client = new MongoClient(
 );
 
 const upload = multer({ storage: multer.memoryStorage() });
+
 client.connect().then(() => console.log("Connected to MongoDB")).catch(console.error);
+
 const getDbCollection = () => client.db("better_ecom").collection('products');
 const categoryDbCollection = () => client.db("better_ecom").collection('categories');
 
 
-/*******************************************************************************/
 // Route to add categories with images
 app.post('/addcategories', upload.single('image'), async (req, res) => {
   const { name } = req.body;
@@ -62,18 +69,16 @@ app.post('/addcategories', upload.single('image'), async (req, res) => {
   }
 });
 
-// fetching the category
 app.get('/categories', async (req, res) => {
   try {
-    const collection = client.db("better_ecom").collection('categories');
+    const collection = await categoryDbCollection ('categories');
     const categories = await collection.find({}).toArray();
     res.status(200).json(categories);
   } catch (err) {
-    console.error("Error getting categories:", err);
-    res.status(500).json({ message: "Failed to retrieve categories" });
+    console.error('Error getting categories:', err);
+    res.status(500).json({ message: 'Failed to retrieve categories' });
   }
 });
-
 // // PATCH route to update a category by ID
 // app.patch('/categories/:id', upload.single('image'), async (req, res) => {
 //   const { id } = req.params;
@@ -145,9 +150,7 @@ app.delete('/categories/:id', async (req, res) => {
   }
 });
 
-/*******************************CATEGORY************************************************/
-
-/*******************************SUB CATEGORY************************************************/
+// Get all subcategories
 // Add a new subcategory and associate it with a category
 app.post('/subcategories', async (req, res) => {
   const { name, category } = req.body;
@@ -165,9 +168,6 @@ app.post('/subcategories', async (req, res) => {
     res.status(500).json({ message: "Failed to add subcategory", error: err.message });
   }
 });
-
-
-// Get all subcategories
 app.get('/subcategories', async (req, res) => {
   try {
     const collection = client.db("better_ecom").collection('subcategories');
@@ -191,7 +191,9 @@ app.get('/subcategories/category/:category', async (req, res) => {
     res.status(500).json({ message: "Failed to retrieve subcategories" });
   }
 });
-// by ID
+
+
+
 app.put('/subcategories/:id', async (req, res) => {
   const subcategoryId = req.params.id;
   const { name, category } = req.body;
@@ -230,49 +232,79 @@ app.delete('/subcategories/:id', async (req, res) => {
   }
 });
 
-/*******************************SUB CATEGORY************************************************/
+
+
+
+// app.post('/addproducts', async (req, res) => {
+//   const { name, price, wholesalePrice, wholesaleQuantity, category, sku, barcode, stock, costPerUnit, storePrice, shortDescription, description, expirationDate, quantityType, images } = req.body;
+
+//   if (!images || images.length === 0) {
+//     return res.status(400).json({ message: 'No image URLs provided' });
+//   }
+
+//   const product = {
+//     name,
+//     price,
+//     wholesalePrice,
+//     wholesaleQuantity,
+//     category,
+//     sku,
+//     barcode,
+//     stock,
+//     costPerUnit,
+//     storePrice,
+//     shortDescription,
+//     description,
+//     expirationDate,
+//     quantityType,
+//     images // URLs of uploaded images
+//   };
+
+//   try {
+//     const collection = await getDbCollection();
+//     const result = await collection.insertOne(product);
+//     res.status(201).json({ message: 'Product added successfully', productId: result.insertedId });
+//   } catch (error) {
+//     console.error('Error adding product:', error);
+//     res.status(500).json({ message: 'Failed to add product' });
+//   }
+// });
 
 // Route to add categories with images
-app.post('/addcategories', upload.single('image'), async (req, res) => {
-  const { name } = req.body;
+// app.post('/addcategories', upload.single('image'), async (req, res) => {
+//   const { name } = req.body;
 
-  if (!req.file) {
-    return res.status(400).json({ message: 'No image file uploaded' });
-  }
+//   if (!req.file) {
+//     return res.status(400).json({ message: 'No image file uploaded' });
+//   }
 
-  try {
-    // Upload image to ImgBB
-    const formData = new FormData();
-    formData.append('image', req.file.buffer.toString('base64'));
-    const response = await fetch('https://api.imgbb.com/1/upload?key=709857af4158efc43859168f6daa2479', {
-      method: 'POST',
-      body: formData
-    });
-    const data = await response.json();
-    const img = data.data.url;
+//   try {
+//     // Upload image to ImgBB
+//     const formData = new FormData();
+//     formData.append('image', req.file.buffer.toString('base64'));
+//     const response = await fetch('https://api.imgbb.com/1/upload?key=709857af4158efc43859168f6daa2479', {
+//       method: 'POST',
+//       body: formData
+//     });
+//     const data = await response.json();
+//     const img = data.data.url;
 
-    // Prepare category data
-    const category = {
-      name,
-      img,
-      created_time: new Date()
-    };
+//     // Prepare category data
+//     const category = {
+//       name,
+//       img,
+//       created_time: new Date()
+//     };
 
-    // Insert category into MongoDB
-    const collection = await categoryDbCollection();
-    const result = await collection.insertOne(category);
-    res.status(201).json({ message: 'Category added successfully', categoryId: result.insertedId });
-  } catch (error) {
-    console.error('Error adding category:', error);
-    res.status(500).json({ message: 'Failed to add category' });
-  }
-});
-
-
-
-
-/******************************Products*************************************************/
-
+//     // Insert category into MongoDB
+//     const collection = await categoryDbCollection();
+//     const result = await collection.insertOne(category);
+//     res.status(201).json({ message: 'Category added successfully', categoryId: result.insertedId });
+//   } catch (error) {
+//     console.error('Error adding category:', error);
+//     res.status(500).json({ message: 'Failed to add category' });
+//   }
+// });
 app.post('/addproducts', async (req, res) => {
   const { name, price, wholesalePrice, wholesaleQuantity, category, subcategory, sku, barcode, stock, costPerUnit, storePrice, shortDescription, description, expirationDate, quantityType, Pick, images } = req.body;
 
@@ -310,22 +342,6 @@ app.post('/addproducts', async (req, res) => {
     res.status(500).json({ message: 'Failed to add product' });
   }
 });
-
-
-app.get('/products/subcategory/:subcategory', async (req, res) => {
-  let { subcategory } = req.params;
-  subcategory = decodeURIComponent(subcategory); // Decode the URL encoded category
-  try {
-    const collection = await getDbCollection(); // Replace with your database collection retrieval
-    const products = await collection.find({ subcategory: { $regex: new RegExp(subcategory, 'i') } }).toArray();
-    res.json(products);
-  } catch (error) {
-    console.error('Error fetching products by category:', error);
-    res.status(500).json({ message: 'Failed to fetch products' });
-  }
-});
-
-
 
 //search by name
 app.get('/products', async (req, res) => {
@@ -370,6 +386,7 @@ app.get('/products/type/:type', async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch products' });
   }
 });
+
 
 
 // Get product by ID
@@ -419,6 +436,56 @@ app.delete('/products/:id', async (req, res) => {
 });
 
 
+// app.patch('/products/:id', async (req, res) => {
+//   const { id } = req.params;
+//   const updatedProduct = req.body;
+
+//   try {
+    
+//     const collection = client.db("better_ecom").collection('products');
+//     const result = await collection.updateOne(
+//       { _id: new ObjectId(id) },
+//       { $set: updatedProduct }
+//     );
+
+//     if (result.matchedCount === 0) {
+//       return res.status(404).json({ message: 'Product not found' });
+//     }
+
+//     const product = await db.collection('products').findOne({ _id: new ObjectId(id) });
+//     res.json(product);
+//   } catch (err) {
+//     res.status(400).json({ message: err.message });
+//   }
+// });
+
+// app.put('/products/:id', async (req, res) => {
+//   const { id } = req.params;
+//   const updatedProduct = req.body;
+
+//   try {
+//     if (!ObjectId.isValid(id)) {
+//       return res.status(400).json({ message: 'Invalid product ID' });
+//     }
+
+//     const collection = client.db("better_ecom").collection('products');
+//     const result = await collection.updateOne(
+//       { _id: new ObjectId(id) },
+//       { $set: updatedProduct }
+//     );
+
+//     if (result.matchedCount === 0) {
+//       return res.status(404).json({ message: 'Product not found' });
+//     }
+
+//     const product = await collection.findOne({ _id: new ObjectId(id) });
+//     res.json(product);
+//   } catch (err) {
+//     console.error('Error updating product:', err.message);
+//     res.status(500).json({ message: 'Failed to update product', error: err.message });
+//   }
+// });
+
 app.patch('/products/:id', async (req, res) => {
   const { id } = req.params;
   let updatedProduct = req.body;
@@ -462,10 +529,6 @@ app.patch('/products/:id', async (req, res) => {
   }
 });
 
-/*******************************PRODUCT************************************************/
-
-
-/*******************************ORDER************************************************/
 
 
 app.post('/addorders', async (req, res) => {
@@ -486,6 +549,18 @@ app.post('/addorders', async (req, res) => {
 });
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 // Order Routes
 app.get('/orders', async (req, res) => {
   try {
@@ -497,7 +572,6 @@ app.get('/orders', async (req, res) => {
     res.status(500).json({ message: "Failed to retrieve orders" });
   }
 });
-
 //fetch orders by id
 app.get('/orders/:id', async (req, res) => {
   try {
@@ -544,7 +618,6 @@ app.put('/orders/:id', async (req, res) => {
   }
 });
 
-/*******************************ORDER************************************************/
 
 // PUT method to update the stock of a product
 app.put('/updateproducts/:id', async (req, res) => {
@@ -623,6 +696,7 @@ app.put('/users/:id', async (req, res) => {
   try {
     const userId = req.params.id;
     const { orderId } = req.body;
+    console.log("Order ID to be added to track record:", orderId);
 
     const collection = client.db("better_ecom").collection('users');
     const result = await collection.updateOne(
@@ -640,5 +714,180 @@ app.put('/users/:id', async (req, res) => {
     res.status(500).json({ message: "Failed to update track record" });
   }
 });
+
+app.post('/addcoupon', async (req, res) => {
+  const collection = client.db("better_ecom").collection('coupons');
+  try {
+    const { code } = req.body;
+
+    // Simple validation
+    if (!code) {
+      return res.status(400).json({ message: 'Coupon code is required' });
+    }
+
+    const newCoupon = {
+      code,
+      createdAt: new Date(),
+    };
+
+    const result = await collection.insertOne(newCoupon);
+
+    if (result.acknowledged) {
+      res.status(201).json({ message: 'Coupon created successfully', couponId: result.insertedId });
+    } else {
+      res.status(500).json({ message: 'Failed to create coupon' });
+    }
+  } catch (err) {
+    console.error('Error creating coupon:', err);
+    res.status(500).json({ message: 'Failed to create coupon', error: err.message });
+  }
+});
+
+app.get('/coupons', async (req, res) => {
+  const collection = client.db("better_ecom").collection('coupons');
+  try {
+    const coupons = await collection.find({}).toArray();
+    res.status(200).json(coupons);
+  } catch (err) {
+    console.error('Error fetching coupons:', err);
+    res.status(500).json({ message: 'Failed to fetch coupons', error: err.message });
+  }
+});
+
+
+app.delete('/deletecoupon/:couponId', async (req, res) => {
+  const collection = client.db("better_ecom").collection('coupons');
+  try {
+    const { couponId } = req.params;
+    const query = { _id: ObjectId(couponId) };
+    
+    const result = await collection.deleteOne(query);
+
+    if (result.deletedCount === 1) {
+      res.status(200).json({ message: 'Coupon deleted successfully' });
+    } else {
+      res.status(404).json({ message: 'Coupon not found' });
+    }
+  } catch (err) {
+    console.error('Error deleting coupon:', err);
+    res.status(500).json({ message: 'Failed to delete coupon', error: err.message });
+  }
+});
+
+// Endpoint to record used coupons
+app.post('/usedcoupons', async (req, res) => {
+  const { email, couponCode } = req.body;
+
+  if (!email || !couponCode) {
+    return res.status(400).json({ message: 'Email and coupon code are required' });
+  }
+
+  try {
+    const collection = client.db('better_ecom').collection('usedcoupons');
+
+    const result = await collection.insertOne({
+      email,
+      couponCode,
+      usedAt: new Date()
+    });
+
+    if (result.insertedCount === 1) {
+      res.status(201).json({ message: 'Coupon usage recorded successfully' });
+    } else {
+      res.status(500).json({ message: 'Failed to record coupon usage' });
+    }
+  } catch (error) {
+    console.error('Error recording coupon usage:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Endpoint to check if an email has already used a coupon
+app.get('/usedcoupons/:email', async (req, res) => {
+  const { email } = req.params;
+
+  try {
+    const collection = client.db('better_ecom').collection('usedcoupons');
+    const usedCoupon = await collection.findOne({ email });
+
+    if (usedCoupon) {
+      res.status(200).json({ used: true });
+    } else {
+      res.status(200).json({ used: false });
+    }
+  } catch (error) {
+    console.error('Error checking coupon usage:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+
+
+//admin
+const bcrypt = require('bcrypt');
+
+app.post('/addadmin', upload.none(), async (req, res) => {
+    const { name, email, phone, password, role } = req.body;
+
+    try {
+        // Hash the password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const user = {
+            name,
+            email,
+            phone,
+            password: hashedPassword, // Store the hashed password
+            role,
+            createdAt: new Date(),
+        };
+
+        const collection = client.db("better_ecom").collection('admin');
+        const result = await collection.insertOne(user);
+        res.status(201).json({ message: 'User added successfully', userId: result.insertedId });
+    } catch (error) {
+        console.error('Error adding user:', error);
+        res.status(500).json({ message: 'Failed to add user', error: error.message });
+    }
+});
+app.post('/login', upload.none(), async (req, res) => {
+  const { email, password, role } = req.body;
+
+  try {
+      const collection = client.db("better_ecom").collection('admin');
+      const user = await collection.findOne({ email, role });
+
+      if (!user) {
+          return res.status(400).json({ message: 'Invalid email, password, or role' });
+      }
+
+      // Compare the hashed password with the one provided by the user
+      const isMatch = await bcrypt.compare(password, user.password);
+
+      if (!isMatch) {
+          return res.status(400).json({ message: 'Invalid email, password, or role' });
+      }
+
+      res.status(200).json({ message: 'Login successful' });
+  } catch (error) {
+      console.error('Error logging in:', error);
+      res.status(500).json({ message: 'Failed to log in', error: error.message });
+  }
+});
+
+app.get('/admin', async (req, res) => {
+  try {
+    const collection = client.db("better_ecom").collection('admin');
+    const admins = await collection.find().toArray();
+    res.status(200).json(admins);
+  } catch (error) {
+    console.error('Error fetching admin data:', error);
+    res.status(500).json({ message: 'Failed to fetch admin data', error: error.message });
+  }
+});
+
+
+
+
 
 app.listen(port, () => console.log(`Server is running on port ${port}`));
