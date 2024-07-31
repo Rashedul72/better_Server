@@ -548,6 +548,18 @@ app.post('/solditems', async (req, res) => {
   }
 });
 
+// Fetching sold items from the database
+app.get('/solditems', async (req, res) => {
+  try {
+    const collection = client.db("better_ecom").collection('solditems');
+    const soldItems = await collection.find().toArray();
+    res.status(200).json(soldItems);
+  } catch (err) {
+    console.error("Error fetching sold items:", err);
+    res.status(500).json({ message: "Failed to fetch sold items", error: err.message });
+  }
+});
+
 
 
 app.post('/addorders', async (req, res) => {
