@@ -531,34 +531,7 @@ app.patch('/products/:id', async (req, res) => {
   }
 });
 
-// adding solde items to the data
-app.post('/solditems', async (req, res) => {
-  const soldItems = req.body; // Assuming the sold items are sent as an array
-  try {
-    const collection = client.db("better_ecom").collection('solditems');
-    const result = await collection.insertMany(soldItems);
-    if (result.acknowledged) {
-      res.status(201).json({ message: "Sold items added successfully", soldItems: result.ops });
-    } else {
-      throw new Error("Failed to insert sold items");
-    }
-  } catch (err) {
-    console.error("Error adding sold items:", err);
-    res.status(500).json({ message: "Failed to add sold items", error: err.message });
-  }
-});
 
-// Fetching sold items from the database
-app.get('/solditems', async (req, res) => {
-  try {
-    const collection = client.db("better_ecom").collection('solditems');
-    const soldItems = await collection.find().toArray();
-    res.status(200).json(soldItems);
-  } catch (err) {
-    console.error("Error fetching sold items:", err);
-    res.status(500).json({ message: "Failed to fetch sold items", error: err.message });
-  }
-});
 
 
 
