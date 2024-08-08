@@ -10,15 +10,8 @@ const port = process.env.PORT || 5000;
 const axios = require('axios');
 const moment = require('moment-timezone');
 
-
-
-
-
 app.use(cors());
 app.use(bodyParser.json());
-
-
-
 
 const client = new MongoClient(
   `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ujcbv.mongodb.net`,
@@ -40,7 +33,6 @@ app.post('/addcategories', upload.single('image'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ message: 'No image file uploaded' });
   }
-
   try {
     // Upload image to ImgBB
     const formData = new FormData();
@@ -50,12 +42,12 @@ app.post('/addcategories', upload.single('image'), async (req, res) => {
       body: formData
     });
     const data = await response.json();
-    const imageUrl = data.data.url;
+    const img = data.data.url;
 
     // Prepare category data
     const category = {
       name,
-      imageUrl,
+      img,
       created_time: new Date()
     };
 
@@ -79,59 +71,67 @@ app.get('/categories', async (req, res) => {
     res.status(500).json({ message: 'Failed to retrieve categories' });
   }
 });
+
+
 // // PATCH route to update a category by ID
-// app.patch('/categories/:id', upload.single('image'), async (req, res) => {
-//   const { id } = req.params;
-//   const { name } = req.body;
+app.patch('/categories/:id', upload.single('image'), async (req, res) => {
+  const { id } = req.params;
+  const { name, image } = req.body;
 
-//   try {
-//     await client.connect();
-//     const collection = client.db("better_ecom").collection('categories');
+  try {
+    await client.connect();
+    const collection = client.db("better_ecom").collection('categories');
 
-//     // Check if category exists
-//     const category = await collection.findOne({ _id: new ObjectId(id) });
-//     if (!category) {
-//       return res.status(404).send('Category not found');
-//     }
+    // Check if category exists
+    const category = await collection.findOne({ _id: new ObjectId(id) });
+    if (!category) {
+      return res.status(404).send('Category not found');
+    }
+    // Logging the request data
+    console.log('Received data:', req.body);
+    console.log('Received file:', req.file);
 
-//     let imgURL = category.img;
+    let imgURL = category.img;
 
-//     // Handle image upload if a new image is provided
-//     if (req.file) {
-//       const imgBBResponse = await axios.post('https://api.imgbb.com/1/upload', {
-//         key: '709857af4158efc43859168f6daa2479',
-//         image: req.file.buffer.toString('base64'),
-//       });
-//       imgURL = imgBBResponse.data.data.url;
-//     }
+    // Use the image URL from the request body if provided
+    if (image) {
+      console.log('Using new image URL provided by client:', image);
+      imgURL = image;
+    } else {
+      console.log('No new image provided, retaining old image URL.');
+    }
 
-//     // Perform the update operation
-//     const updateResult = await collection.updateOne(
-//       { _id: new ObjectId(id) },
-//       {
-//         $set: {
-//           name: name,
-//           img: imgURL,
-//           updated_time: new Date(),
-//         },
-//       }
-//     );
+    // Perform the update operation
+    const updateResult = await collection.updateOne(
+      { _id: new ObjectId(id) },
+      {
+        $set: {
+          name: name,
+          img: imgURL,
+          updated_time: new Date(),
+        },
+      }
+    );
 
-//     // Check if the update was successful
-//     if (updateResult.matchedCount === 1) {
-//       // Fetch the updated category
-//       const updatedCategory = await collection.findOne({ _id: new ObjectId(id) });
-//       res.json({ category: updatedCategory });
-//     } else {
-//       res.status(500).send('Failed to update category');
-//     }
-//   } catch (err) {
-//     console.error('Error updating category:', err);
-//     res.status(500).send('Error updating category');
-//   } finally {
-//     await client.close();
-//   }
-// });
+    // Check if the update was successful
+    if (updateResult.matchedCount === 1) {
+      // Fetch the updated category
+      const updatedCategory = await collection.findOne({ _id: new ObjectId(id) });
+      console.log('Category updated successfully:', updatedCategory);
+      res.json({ category: updatedCategory });
+    } else {
+      console.error('Failed to update category in the database');
+      res.status(500).send('Failed to update category');
+    }
+  } catch (err) {
+    console.error('Error updating category:', err);
+    res.status(500).send('Error updating category');
+  } finally {
+    await client.close();
+  }
+});
+
+
 
 // Route to delete a category by ID
 app.delete('/categories/:id', async (req, res) => {
